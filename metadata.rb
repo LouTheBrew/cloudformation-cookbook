@@ -1,0 +1,10 @@
+name 'cloudformation'
+maintainer 'The Authors'
+maintainer_email 'you@example.com'
+license 'all_rights'
+description 'Installs/Configures cloudformation'
+long_description 'Installs/Configures cloudformation'
+version '0.1.0'
+
+depends 'poise'
+depends 'python'
