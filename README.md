@@ -1,2 +1,4 @@
-# cloudformation-cookbook
-A cookbook for amazon cloudformation
+# cloudformation
+
+TODO: Enter the cookbook description here.
+
