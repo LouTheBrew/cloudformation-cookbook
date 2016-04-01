@@ -13,7 +13,8 @@ module Cloudformation
     attribute :venv, kind_of: String, default: '/chef/apps/virtualenvs/cloudformation/'
     attribute :template, kind_of: String, default: 'cfntools.py.erb'
     attribute :template_src_cookbook, kind_of: String, default: 'cloudformation'
-    attribute :bucket, kind_of: String
+    attribute :region, kind_of: String, default: 'us-east-1', required: true
+    attribute :bucket, kind_of: String, required: true
   end
   class Provider < Chef::Provider
     include Poise
@@ -44,17 +45,14 @@ module Cloudformation
         return new_resource.stack_name
       end
     end
-    def mode
-      ""
-    end
-    def cfntemplate
-      access do
-        return new_resource.name
-      end
-    end
     def key
       access do
-        return new_resource.name
+        return new_resource.key
+      end
+    end
+    def region
+      access do
+        return new_resource.region
       end
     end
     def python_env(env)
@@ -82,8 +80,8 @@ module Cloudformation
         bash "create" do
           code <<-EOH
           touch /tmp/cmd.log
-          echo "#{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key}" >> /tmp/cmd.log
-          #{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key}
+          echo "#{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key} #{self.region}" >> /tmp/cmd.log 
+          #{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key} #{self.region}
           EOH
         end
       end
@@ -94,8 +92,8 @@ module Cloudformation
         bash cmd do
           code <<-EOH
           touch /tmp/cmd.log
-          echo "#{self.python} #{self.cfnpythonbin} #{cmd} #{self.stack_name} #{self.bucket} #{self.key}" >> /tmp/cmd.log
-          #{self.python} #{self.cfnpythonbin} #{cmd} #{self.stack_name} #{self.bucket} #{self.key}
+          echo "#{self.python} #{self.cfnpythonbin} #{cmd} #{self.stack_name} #{self.bucket} #{self.key} #{self.region}" >> /tmp/cmd.log
+          #{self.python} #{self.cfnpythonbin} #{cmd} #{self.stack_name} #{self.bucket} #{self.key} #{self.region}
           EOH
         end
       end
