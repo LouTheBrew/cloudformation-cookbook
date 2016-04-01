@@ -1,0 +1,268 @@
+#!<%=@context[:interpreter]%>
+"""S3Tool.
+Usage:
+  s3 test
+  s3 upload <bucket> <path> <key> <outf>
+  s3 download <bucket> <path> <key> <outf>
+  s3 delete <bucket> <key> <outf>
+"""
+#""".format(name=__name__)
+import boto3
+import os
+from docopt import docopt
+import unittest
+import json
+
+
+def log(msg, outf):
+    with open(outf, 'wa') as f:
+        f.write(json.dumps(msg))
+
+class S3Connection(object):
+    def __init__(self):
+        self.aws_connection = None
+        self.aws_resource = None
+        self.default_region = 'us-west-2'
+        self.connection = {}
+        self.connection['type'] = 's3'
+
+    def __get_connection_type__(self):
+        return self__get_connection__(self, 'type')
+
+    def __get_connection__(self, attr):
+        return self.connection[attr]
+
+    def __get_default_region__(self):
+        return self.default_region
+
+    def __change_default_region__(self, region):
+        self.default_region = region
+
+    def __get_current_connection_object__(self):
+        return self.aws_connection
+
+    def __get_current_resource_object__(self):
+        return self.aws_resource
+
+    def __create_resource__(self):
+        region = self.__get_default_region__()
+        return boto3.resource('s3', region_name=region)
+
+    def __create_connection__(self):
+        region = self.__get_default_region__()
+        return boto3.client('s3', region_name=region)
+
+    def get_connection(self):
+        if self.__get_current_connection_object__() is None:
+            conn = self.__create_connection__()
+        else:
+            conn = self.__get_current_connection_object__()
+        return conn
+
+    def get_resource(self):
+        if self.__get_current_resource_object__() is None:
+            conn = self.__create_resource__()
+        else:
+            conn = self.__get_current_resource_object__()
+        return conn
+
+class S3Interface(object):
+    def __init__(self):
+        self.conn_interface = S3Connection()
+
+    def conn(self):
+        return self.conn_interface.get_connection()
+
+    def resource(self):
+        return self.conn_interface.get_resource()
+
+    def upload(self, **kwargs):
+        conn = self.resource()
+        try:
+            response = conn.Bucket(kwargs['bucket']).upload_file(kwargs['filename'], kwargs['key'])
+            if response is None:
+                response = {"state": "success"}
+        except:
+            response = {"state": "error"}
+        return response
+
+    def download(self, **kwargs):
+        conn = self.resource()
+        try:
+            response = conn.meta.client.download_file(kwargs['bucket'], kwargs['key'], kwargs['filename'])
+            if response is None:
+                response = {"state": "success"}
+        except:
+            response = {"state": "error"}
+        return response
+
+    def delete(self, **kwargs):
+        conn = self.conn()
+        try:
+            response = conn.delete_object(Bucket=kwargs['bucket'], Key=kwargs['key'])
+            if response is None:
+                response = {"state": "success"}
+        except:
+            response = {"state": "error"}
+        return response
+
+class S3CLI(object):
+    def __init__(self):
+        self.args = docopt(__doc__)
+        self.interface = S3Interface()
+
+    def __get_interface__(self):
+        if self.interface:
+            return self.interface
+        else:
+            self.interface = S3Interface()
+
+    def getArgs(self):
+        return self.args
+
+    def run(self, testcall):
+        if self.getArgs()['test']:
+            print 'PONG'
+        if self.getArgs()['upload']:
+            log(self.interface.upload(
+                bucket=self.getArgs()['<bucket>'],
+                filename=self.getArgs()['<path>'],
+                key=self.getArgs()['<key>']
+                ),
+                outf=self.getArgs()['<outf>'])
+        if self.args['download']:
+            log(self.interface.download(
+                bucket=self.getArgs()['<bucket>'],
+                filename=self.getArgs()['<path>'],
+                key=self.getArgs()['<key>']
+                ),
+                outf=self.getArgs()['<outf>'])
+        if self.args['delete']:
+            log(self.interface.delete(
+                bucket=self.getArgs()['<bucket>'],
+                key=self.getArgs()['<key>']
+                ),
+                outf=self.getArgs()['<outf>'])
+
+class TestHelpers(object):
+    def dummy_files(self, **kwargs):
+        if kwargs['action'] is 'create':
+            self.create_dummy_files(**kwargs)
+        if kwargs['action'] is 'destroy':
+            self.destroy_dummy_files(**kwargs)
+
+    def create_dummy_files(self, **kwargs):
+        self.__create_dummy_files__(**kwargs)
+
+    def destroy_dummy_files(self, **kwargs):
+        self.__destroy_dummy_files__(**kwargs)
+
+    def __destroy_dummy_file__(self, **kwargs):
+        os.remove(kwargs['name'])
+
+    def __create_dummy_file__(self, **kwargs):
+        with open(kwargs['name'], 'w') as f:
+            f.write(kwargs['content'])
+
+    def __create_dummy_files__(self, **kwargs):
+        for file in kwargs['files']:
+            file['content'] = os.urandom(kwargs['bytes'])
+            self.__create_dummy_file__(
+                name=file['name'],
+                content=file['content']
+            )
+
+    def __destroy_dummy_files__(self, **kwargs):
+        for file in kwargs['files']:
+            self.__destroy_dummy_file__(file['name'])
+
+class S3InterfaceTestCase(unittest.TestCase):
+    def defaults(self):
+        return {
+            'bucket':'anaplan-devops',
+            'filename':'metadata.rb',
+            'key':'tests/metadata.rb',
+        }
+
+    def fakeUploadResponse(self, type='success'):
+        if type is 'success':
+            return {"state":"success"}
+        if type is 'error':
+            return {"state":"error"}
+
+    def fakeDownloadResponse(self, type='success'):
+        if type is 'success':
+            return {"state":"success"}
+        if type is 'error':
+            return {"state":"error"}
+
+    def fakeDeleteRequest(self, type='success'):
+        if type is 'success':
+            return {'ResponseMetadata': {'HTTPStatusCode': 204, 'HostId': 'f4YStCYo6z0/p35Noo4/Xdli9USD8TeW3E0HJAR9dw1Z2W7USJxJFYeYPO0UFhxBaeISXw1mWSI=', 'RequestId': '151FADB92A5D9BB9'}}
+        if type is 'error':
+            pass
+
+    def dummy_files(plugin='helpers', **kwargs):
+        return self.plugins()[plugin]().dummy_files(**kwargs)
+
+    def setUp(self):
+        self.interface = S3Interface()
+
+    def test_download(self):
+        def thisResponse():
+            self.interface.upload(
+                bucket=self.defaults()['bucket'],
+                filename=self.defaults()['filename'],
+                key=self.defaults()['key']
+            )
+            return self.interface.download(
+                bucket=self.defaults()['bucket'],
+                filename=self.defaults()['filename'],
+                key=self.defaults()['key']
+            )
+        self.assertEqual(
+            self.fakeDownloadResponse()['state'],
+            thisResponse()['state']
+        )
+
+    def test_upload(self):
+        def thisResponse():
+            return self.interface.upload(
+                bucket=self.defaults()['bucket'],
+                filename=self.defaults()['filename'],
+                key=self.defaults()['key']
+            )
+        self.assertEqual(
+            self.fakeUploadResponse()['state'],
+            thisResponse()['state']
+        )
+
+    def test_delete(self):
+        def thisResponse():
+            self.interface.upload(
+                bucket=self.defaults()['bucket'],
+                filename=self.defaults()['filename'],
+                key=self.defaults()['key']
+            )
+            return self.interface.delete(
+                bucket=self.defaults()['bucket'],
+                key=self.defaults()['key']
+            )
+        self.assertEqual(
+            self.fakeDeleteRequest()['ResponseMetadata']['HTTPStatusCode'],
+            thisResponse()['ResponseMetadata']['HTTPStatusCode']
+        )
+
+    def tearDown(self):
+        pass
+        #response = self.dummy_files(action='destroy')
+
+def testing():
+    unittest.main()
+
+def main():
+    S3CLI().run(testing)
+
+if __name__ == '__main__':
+    #testing()
+    main()

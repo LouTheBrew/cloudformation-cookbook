@@ -1,0 +1,144 @@
+#!<%=@context[:interpreter]%>
+"""cfnTool.
+Usage:
+  cfn test
+  cfn initiate <template> <bucket> <key> <region>
+  cfn create <template> <bucket> <key> <region>
+  cfn destroy <template> <region>
+"""
+import boto3
+import json
+import unittest
+import time
+from docopt import docopt
+
+def log(msg, outf, mode='a'):
+    with open(outf, mode) as f:
+        f.write("{0}\n".format(json.dumps(msg)))
+
+class CFNConnection(object):
+    def __init__(self):
+        self.connection = None
+        self.api = 'cloudformation'
+        self.default_region = 'us-east-1'
+
+    def __get_connection__(self, region):
+        if not self.connection is None:
+            return self.connection
+        else:
+            return self.__create_connection__(region)
+
+    def __create_connection__(self):
+        region = self.default_region
+        return boto3.client(self.api, region_name=region)
+
+    def getConnection(self):
+        region = self.default_region
+        return self.__get_connection__(region)
+
+class CFNInterface(object):
+    def __init__(self):
+        self.connection = CFNConnection()
+        self.logf = '/tmp/cfn.log'
+
+    def log(self, msg):
+        log(msg, self.logf)
+
+    def initiate(self, **kwargs):
+        conn = self.connection.getConnection(kwargs['region'])
+        response = conn.create_stack(
+            StackName=kwargs['template'],
+            TemplateURL="https://s3-us-west-1.amazonaws.com/{0}/{1}".format(kwargs['bucket'], kwargs['key'])
+        )
+        self.log(response)
+
+    def create(self, **kwargs):
+        conn = self.connection.getConnection(kwargs['region'])
+        response = conn.create_stack(
+            StackName=kwargs['template'],
+            TemplateURL="https://s3-us-west-1.amazonaws.com/{0}/{1}".format(kwargs['bucket'], kwargs['key'])
+        )
+        if kwargs['timed']:
+            def success_response():
+                return {'StackStatus': "CREATE_COMPLETE"}
+
+            # fake the first one for a bad check loop
+            this_response = {'Stacks': [
+                {'StackStatus': 'NOTUP'}
+            ]}
+            while not success_response()['StackStatus'] in this_response['Stacks'][0]['StackStatus']:
+                this_response = conn.describe_stacks(
+                  StackName=kwargs['template'],
+                )
+                time.sleep(2)
+                self.log(this_response['Stacks'][0]['StackStatus'])
+
+    def destroy(self, **kwargs):
+        conn = self.connection.getConnection(kwargs['region'])
+        response = conn.destroy_stack(
+            StackName=kwargs['template']
+        )
+        self.log(response)
+
+class CFNCLI(object):
+    def __init__(self):
+        self.args = docopt(__doc__)
+        self.interface = CFNInterface()
+
+    def getArgs(self):
+        return self.args
+
+    def run(self):
+        if not self.getArgs()['<region>']:
+            self.getArgs()['<region>'] = self.interface.conection.default_region
+        if self.getArgs()['test']:
+            print 'PONG'
+        if self.getArgs()['initiate']:
+            self.interface.initiate(
+                bucket=self.getArgs()['<bucket>'],
+                template=self.getArgs()['<template>'],
+                region=self.getArgs()['<region>'],
+                key=self.getArgs()['<key>']
+            )
+        if self.getArgs()['create']:
+            self.interface.create(
+                bucket=self.getArgs()['<bucket>'],
+                template=self.getArgs()['<template>'],
+                region=self.getArgs()['<region>'],
+                timed=True,
+                key=self.getArgs()['<key>']
+            )
+        if self.getArgs()['destroy']:
+            self.interface.destroy(
+                template=self.getArgs()['<template>'],
+                region=self.getArgs()['<region>']
+            )
+
+#class CFNInterfaceTestCase(unittest.TestCase):
+#    def setUp(self):
+#        self.interface = CFNInterface()
+#
+#    def initiateProp(self):
+#        return {'state':'success'}
+#
+#    def createProp(self):
+#        return {'state':'success'}
+#
+#    def destroyProp(self):
+#        return {'state':'success'}
+#
+#    def test_initiate(self):
+#        def thisResponse():
+#            return self.interface.initiate
+#        self.assertEqual(
+#        )
+#
+#    def test_create(self):
+#        self.assertEqual(
+#        )
+#
+#    def test_destroy(self):
+#        self.assertEqual(
+#        )
+if __name__ == '__main__':
+    CFNCLI().run()

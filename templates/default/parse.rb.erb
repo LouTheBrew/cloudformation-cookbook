@@ -1,0 +1,14 @@
+require 'sparkle_formation'
+require 'pp'
+require 'json'
+
+SparkleFormation.sparkle_path = File.dirname(__FILE__)
+
+puts JSON.pretty_generate(
+  SparkleFormation.compile(
+    File.join(
+      File.dirname(__FILE__),
+      "templates/#{ARGV[0]}"
+    )
+  )
+)

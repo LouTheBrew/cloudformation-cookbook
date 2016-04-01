@@ -1,0 +1,50 @@
+import boto3
+import sys
+import time
+
+def log(msg):
+  logfn = "/var/log/dr_dc5.log"
+  try:
+    with open(logfn, 'a') as f:
+      f.write(msg+'\n')
+  except:
+    with open(logfn, 'w') as f:
+     f.write(msg+'\n')
+
+def main():
+  client = boto3.client('cloudformation', region_name='us-west-2')
+  formations = [
+    'drazaone.json',
+    'drazatwo.json',
+    'drazbone.json',
+    'drazbtwo.json',
+    'drazcone.json',
+    'drazctwo.json'
+  ]
+  for formation in formations:
+    name = formation.replace('.','')
+    response = client.create_stack(
+      StackName="DR{0}".format(name),
+      TemplateURL="https://s3-us-west-1.amazonaws.com/anaplan-devops/{0}".format(formation),
+      Capabilities=[
+        'CAPABILITY_IAM'
+      ]
+    )
+
+if __name__ == '__main__':
+  start = time.time()
+  log("Start time is {0}".format(start))
+  main()
+  state = None
+  client = boto3.client('cloudformation', region_name='us-west-2')
+  while state != 'CREATE_COMPLETE':
+    response = client.describe_stacks(
+      StackName='DRdrazctwojson'
+    )
+    state = response['Stacks'][0]['StackStatus']
+    log("State for drazaone is now {0}".format(state))
+    time.sleep(1)
+  end = time.time()
+  log("End time is {0}".format(start))
+  total = end - start
+  log('Run Time:{0}'.format(total))
