@@ -8,15 +8,12 @@ module Cloudformation
     provides  :cloudformation
     actions   :create, :destroy
     attribute :name, name_attribute: true, kind_of: String
+    attribute :stack_name, kind_of: String
     attribute :pip_packages, kind_of: Array, default: %w{boto3 docopt}
     attribute :venv, kind_of: String, default: '/chef/apps/virtualenvs/cloudformation/'
     attribute :template, kind_of: String, default: 'cfntools.py.erb'
     attribute :template_src_cookbook, kind_of: String, default: 'cloudformation'
     attribute :bucket, kind_of: String
-    attribute :origin, kind_of: Symbol, default: :s3
-    attribute :on_fail, kind_of: Symbol, default: :sticky
-    attribute :wait_for, kind_of: Symbol, default: :success
-    attribute :stack_name, kind_of: String
   end
   class Provider < Chef::Provider
     include Poise
