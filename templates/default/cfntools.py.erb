@@ -8,9 +8,9 @@ Usage:
 """
 import boto3
 import json
-import unittest
 import time
 from docopt import docopt
+import unittest
 
 def log(msg, outf, mode='a'):
     with open(outf, mode) as f:
@@ -89,10 +89,10 @@ class CFNCLI(object):
         return self.args
 
     def run(self):
+        if self.getArgs()['test']:
+            unittest.main()
         if not self.getArgs()['<region>']:
             self.getArgs()['<region>'] = self.interface.conection.default_region
-        if self.getArgs()['test']:
-            print 'PONG'
         if self.getArgs()['initiate']:
             self.interface.initiate(
                 bucket=self.getArgs()['<bucket>'],
@@ -114,9 +114,9 @@ class CFNCLI(object):
                 region=self.getArgs()['<region>']
             )
 
-#class CFNInterfaceTestCase(unittest.TestCase):
-#    def setUp(self):
-#        self.interface = CFNInterface()
+class ModuleTest(unittest.TestCase):
+    #def setUp(self):
+    #    self.interface = CFNInterface()
 #
 #    def initiateProp(self):
 #        return {'state':'success'}
@@ -132,13 +132,7 @@ class CFNCLI(object):
 #            return self.interface.initiate
 #        self.assertEqual(
 #        )
-#
-#    def test_create(self):
-#        self.assertEqual(
-#        )
-#
-#    def test_destroy(self):
-#        self.assertEqual(
-#        )
+    pass
 if __name__ == '__main__':
+    #unittest.main()
     CFNCLI().run()
