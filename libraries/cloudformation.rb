@@ -10,7 +10,7 @@ module Cloudformation
     attribute :name, name_attribute: true, kind_of: String
     attribute :stack_name, kind_of: String
     attribute :pip_packages, kind_of: Array, default: %w{boto3 docopt}
-    attribute :venv, kind_of: String, default: '/chef/apps/virtualenvs/cloudformation/'
+    attribute :venv, kind_of: String, default: "#{Chef::Config[:file_cache_path]}virtualenvs/cloudformation/"
     attribute :template, kind_of: String, default: 'cfntools.py.erb'
     attribute :template_src_cookbook, kind_of: String, default: 'cloudformation'
     attribute :region, kind_of: String, default: 'us-east-1', required: true
