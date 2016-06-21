@@ -80,7 +80,7 @@ module Cloudformation
         bash "create" do
           code <<-EOH
           touch /tmp/cmd.log
-          echo "#{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key} #{self.region}" >> /tmp/cmd.log 
+          echo "#{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key} #{self.region}" >> /tmp/cmd.log
           #{self.python} #{self.cfnpythonbin} create #{self.stack_name} #{self.bucket} #{self.key} #{self.region}
           EOH
         end
