@@ -1,5 +1,5 @@
 DEPENDENCIES
-  poise-cloudformation
+  poise-cloudformations
     path: .
     metadata: true
 
@@ -14,7 +14,7 @@ GRAPH
     compat_resource (>= 0.0.0)
     seven_zip (>= 0.0.0)
   poise (2.7.1)
-  poise-cloudformation (0.0.1)
+  poise-cloudformations (0.0.5)
     poise (>= 0.0.0)
     python (>= 0.0.0)
   python (1.4.6)
@@ -24,6 +24,6 @@ GRAPH
     windows (>= 1.2.2)
   windows (1.43.0)
     chef_handler (>= 0.0.0)
-  yum (3.10.0)
+  yum (3.11.0)
   yum-epel (0.7.0)
     yum (>= 3.6.3)
